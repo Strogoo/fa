@@ -147,6 +147,15 @@ function CreateUI(isReplay)
     if focusarmy >= 1 then
         LocGlobals.PlayerName = GetArmiesTable().armiesTable[focusarmy].nickname
     end
+    
+    WARN('Attempting loadsavedgame hack')
+    WARN(SessionGetLocalCommandSource())
+    LOG(repr(GetArmiesTable()))
+    LOG(focusarmy)
+    LoadSavedGame(1, GetArmiesTable().armiesTable[0].nickname, 1)
+    LOG(repr(GetArmiesTable()))
+    SimCallback({Func = 'SetArmy', Args = {}})
+    WARN('Done')
 
     GameCommon.InitializeUnitIconBitmaps(prefetchTable.batch_textures)
 

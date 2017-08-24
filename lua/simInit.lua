@@ -239,6 +239,18 @@ function BeginSession()
         end
     end
 
+    WARN('Testing')
+    WARN(focusarmy ~= 0)
+    WARN(ArmyBrains[focusarmy].BrainType == 'Human')
+    -- Use engine shared armies hack to allow control over army 0
+    if focusarmy ~= 0 and ArmyBrains[focusarmy].BrainType == 'Human' then
+        WARN('Letting army ' .. focusarmy .. ' control army 0')
+        ArmyGetHandicap(0, focusarmy, 1)
+        WARN('Done')
+        --SetFocusArmy(0)
+        --ConExecute('SetFocusArmy', 0)
+    end
+    
     if ScenarioInfo.Options.TeamLock == 'locked' then
         -- Specify that the teams are locked.  Parts of the diplomacy dialog will
         -- be disabled.

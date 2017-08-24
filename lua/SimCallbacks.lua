@@ -138,6 +138,21 @@ Callbacks.SpawnSpecialPing = SimPing.SpawnSpecialPing
 
 Callbacks.UpdateMarker = SimPing.UpdateMarker
 
+Callbacks.SetArmy = function()
+    WARN('SetArmy callback')
+    local focusarmy = GetFocusArmy()
+    LOG(focusarmy)
+    if focusarmy ~= 0 and ArmyBrains[focusarmy].BrainType == 'Human' then
+        WARN('Letting army ' .. focusarmy .. ' control army 0')
+        ArmyGetHandicap(0, focusarmy, 1)
+        WARN('Done')
+        --SetFocusArmy(0)
+        --ConExecute('SetFocusArmy', 0)
+    end
+    
+    WARN('SetArmy Done')
+end
+
 Callbacks.FactionSelection = import('/lua/ScenarioFramework.lua').OnFactionSelect
 
 Callbacks.ToggleSelfDestruct = import('/lua/selfdestruct.lua').ToggleSelfDestruct

@@ -82,6 +82,9 @@ function PingUpdate()
 end
 
 function CreateUI()
+    WARN('Connectivity opened')
+    LOG(repr(GetArmiesTable()))
+    
     if not SessionIsMultiplayer() then
         return
     end
