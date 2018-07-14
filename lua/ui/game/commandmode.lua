@@ -212,6 +212,12 @@ function OnCommandIssued(command)
     end
 
     if command.CommandType == 'Guard' and command.Target.EntityId then
+        for _,unit in command.Units do
+            if unit:IsInCategory("DUMMYWEAPONSUPPORT") then
+                SetFireState({unit}, 1)
+            end
+        end
+        
         local c = categories.STRUCTURE * categories.FACTORY
         if EntityCategoryContains(c, command.Blueprint) then
             local factories = EntityCategoryFilterDown(c, command.Units) or {}
@@ -242,6 +248,9 @@ function OnCommandIssued(command)
         local view = import('/lua/ui/game/worldview.lua').viewLeft
         local avgPoint = {0,0}
         for _,unit in command.Units do
+            if unit:IsInCategory("DUMMYWEAPONSUPPORT") then
+                SetFireState({unit}, 2)
+            end
             avgPoint[1] = avgPoint[1] + unit:GetPosition()[1]
             avgPoint[2] = avgPoint[2] + unit:GetPosition()[3]
         end
@@ -259,6 +268,12 @@ function OnCommandIssued(command)
         local cb = {Func="AttackMove", Args={Target=command.Target.Position, Rotation = rotation, Clear=command.Clear}}
         SimCallback(cb, true)
         AddDefaultCommandFeedbackBlips(command.Target.Position)
+    elseif command.CommandType == 'AggressiveMove' then
+        for _,unit in command.Units do
+            if unit:IsInCategory("DUMMYWEAPONSUPPORT") then
+                SetFireState({unit}, 2)
+            end
+        end    
     elseif command.Clear == true and command.CommandType ~= 'Stop' and table.getn(command.Units) == 1 and checkBadClean(command.Units[1]) then
         watchForQueueChange(command.Units[1])
     elseif command.CommandType == 'Script' and command.LuaParams and command.LuaParams.Enhancement then

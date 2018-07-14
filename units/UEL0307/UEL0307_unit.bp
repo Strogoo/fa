@@ -61,6 +61,7 @@ UnitBlueprint {
         'RECLAIMABLE',
         'OVERLAYDEFENSE',
         'DUMMYGSRWEAPON',
+        'DUMMYWEAPONSUPPORT',
     },
     CollisionOffsetZ = 0.05,
     Defense = {
