@@ -26,6 +26,12 @@ local Wreckage = import('/lua/wreckage.lua')
 local Set = import('/lua/system/setutils.lua')
 
 -- Localised global functions for speed. ~10% for single references, ~30% for double (eg table.insert)
+local tableInsert = table.insert
+local tableRemove = table.remove
+local tableGetn = table.getn
+local tableGetsize = table.getsize
+local tableEmpty = table.empty
+local tableDeepCopy = table.deepcopy
 
 local mathMax = math.max
 local mathMin = math.min
@@ -247,7 +253,7 @@ Unit = Class(moho.unit_methods) {
         self:SetCanBeKilled(true)
 
         local bpDeathAnim = bp.Display.AnimationDeath
-        if bpDeathAnim and table.getn(bpDeathAnim) > 0 then
+        if bpDeathAnim and tableGetn(bpDeathAnim) > 0 then
             self.PlayDeathAnimation = true
         end
 
@@ -645,7 +651,7 @@ Unit = Class(moho.unit_methods) {
         local capsCheckTable = {'RULEUTC_WeaponToggle', 'RULEUTC_ProductionToggle', 'RULEUTC_GenericToggle', 'RULEUTC_SpecialToggle'}
         for _, v in capsCheckTable do
             if self:TestToggleCaps(v) == true then
-                table.insert(self.ToggleCaps, v)
+                tableInsert(self.ToggleCaps, v)
             end
             self:RemoveToggleCap(v)
         end
@@ -721,7 +727,7 @@ Unit = Class(moho.unit_methods) {
         if not self.CaptureThread then
             self.CaptureThread = self:ForkThread(function()
                 local captors = self.Captors or {}
-                while table.getsize(captors) > 0 do
+                while tableGetsize(captors) > 0 do
                     for _, c in captors do
                         self:CheckCaptor(c)
                     end
@@ -745,7 +751,7 @@ Unit = Class(moho.unit_methods) {
     RemoveCaptor = function(self, captor)
         self.Captors[captor.EntityId] = nil
 
-        if table.getsize(self.Captors) == 0 then
+        if tableGetsize(self.Captors) == 0 then
             self:ResetCaptors()
         end
     end,
@@ -883,7 +889,7 @@ Unit = Class(moho.unit_methods) {
 
             -- The unit transfer function returns a table of units. Since we transferred 1 unit, the table contains 1 unit (The new unit).
             -- If table would have been nil (Set to {} above), was empty, or contains more than one, kill this sequence
-            if table.empty(newUnits) or table.getn(newUnits) ~= 1 then
+            if tableEmpty(newUnits) or tableGetn(newUnits) ~= 1 then
                 return
             end
 
@@ -977,14 +983,14 @@ Unit = Class(moho.unit_methods) {
         -- We need to check all the units assisting.
         for _, v in self:GetGuards() do
             if not v.Dead then
-                table.insert(units, v)
+                tableInsert(units, v)
             end
         end
 
         local workers = self:GetAIBrain():GetUnitsAroundPoint(categories.REPAIR, self:GetPosition(), 50, 'Ally')
         for _, v in workers do
             if not v.Dead and v:IsUnitState('Repairing') and v:GetFocusUnit() == self then
-                table.insert(units, v)
+                tableInsert(units, v)
             end
         end
 
@@ -1196,7 +1202,7 @@ Unit = Class(moho.unit_methods) {
     end,
 
     PlayDamageEffect = function(self, fxTable, fxBag)
-        local effects = fxTable[Random(1, table.getn(fxTable))]
+        local effects = fxTable[Random(1, tableGetn(fxTable))]
         if not effects then return end
 
         local totalBones = self:GetBoneCount()
@@ -1206,13 +1212,13 @@ Unit = Class(moho.unit_methods) {
         for _, v in effects do
             local fx
             if bpDE then
-                local num = Random(1, table.getsize(bpDE))
+                local num = Random(1, tableGetsize(bpDE))
                 local bpFx = bpDE[num]
                 fx = CreateAttachedEmitter(self, bpFx.Bone or 0, army, v):ScaleEmitter(self.FxDamageScale):OffsetEmitter(bpFx.OffsetX or 0, bpFx.OffsetY or 0, bpFx.OffsetZ or 0)
             else
                 fx = CreateAttachedEmitter(self, bone, army, v):ScaleEmitter(self.FxDamageScale)
             end
-            table.insert(fxBag, fx)
+            tableInsert(fxBag, fx)
         end
     end,
 
@@ -1668,9 +1674,9 @@ Unit = Class(moho.unit_methods) {
     end,
 
     CreateUnitDestructionDebris = function(self, high, low, chassis)
-        local HighDestructionParts = table.getn(self.DestructionPartsHighToss)
-        local LowDestructionParts = table.getn(self.DestructionPartsLowToss)
-        local ChassisDestructionParts = table.getn(self.DestructionPartsChassisToss)
+        local HighDestructionParts = tableGetn(self.DestructionPartsHighToss)
+        local LowDestructionParts = tableGetn(self.DestructionPartsLowToss)
+        local ChassisDestructionParts = tableGetn(self.DestructionPartsChassisToss)
 
         -- Limit the number of parts that we throw out
         local HighPartLimit = HighDestructionParts
@@ -2070,7 +2076,7 @@ Unit = Class(moho.unit_methods) {
         self:StartBeingBuiltEffects(builder, layer)
 
         local aiBrain = self:GetAIBrain()
-        if table.getn(aiBrain.UnitBuiltTriggerList) > 0 then
+        if tableGetn(aiBrain.UnitBuiltTriggerList) > 0 then
             for _, v in aiBrain.UnitBuiltTriggerList do
                 if EntityCategoryContains(v.Category, self) then
                     self:ForkThread(self.UnitBuiltPercentageCallbackThread, v.Percent, v.Callback)
@@ -2155,7 +2161,7 @@ Unit = Class(moho.unit_methods) {
         self:DoUnitCallbacks('OnStopBeingBuilt')
 
         -- Create any idle effects on unit
-        if table.getn(self.IdleEffectsBag) == 0 then
+        if tableGetn(self.IdleEffectsBag) == 0 then
             self:CreateIdleEffects()
         end
 
@@ -2502,7 +2508,7 @@ Unit = Class(moho.unit_methods) {
 
         if order == 'Repair' then
             self:OnStartRepair(built)
-        elseif self:GetHealth() < self:GetMaxHealth() and table.getsize(self:GetGuards()) > 0 then
+        elseif self:GetHealth() < self:GetMaxHealth() and tableGetsize(self:GetGuards()) > 0 then
             -- Unit building something is damaged and has assisters, check their focus
             self:CheckAssistersFocus()
         end
@@ -2829,14 +2835,14 @@ Unit = Class(moho.unit_methods) {
         if not self.DetectedByHooks then
             self.DetectedByHooks = {}
         end
-        table.insert(self.DetectedByHooks, hook)
+        tableInsert(self.DetectedByHooks, hook)
     end,
 
     RemoveDetectedByHook = function(self, hook)
         if self.DetectedByHooks then
             for k, v in self.DetectedByHooks do
                 if v == hook then
-                    table.remove(self.DetectedByHooks, k)
+                    tableRemove(self.DetectedByHooks, k)
                     return
                 end
             end
@@ -3328,7 +3334,7 @@ Unit = Class(moho.unit_methods) {
                 effects = self.GetTerrainTypeEffects(FxBlockType, FxBlockKey, pos, vTypeGroup.Type, TypeSuffix)
             end
 
-            if not vTypeGroup.Bones or (vTypeGroup.Bones and (table.getn(vTypeGroup.Bones) == 0)) then
+            if not vTypeGroup.Bones or (vTypeGroup.Bones and (tableGetn(vTypeGroup.Bones) == 0)) then
                 WARN('*WARNING: No effect bones defined for layer group ', repr(self:GetUnitId()), ', Add these to a table in Display.[EffectGroup].', self:GetCurrentLayer(), '.Effects {Bones ={}} in unit blueprint.')
             else
                 for kb, vBone in vTypeGroup.Bones do
@@ -3338,7 +3344,7 @@ Unit = Class(moho.unit_methods) {
                             emit:OffsetEmitter(vTypeGroup.Offset[1] or 0, vTypeGroup.Offset[2] or 0, vTypeGroup.Offset[3] or 0)
                         end
                         if EffectBag then
-                            table.insert(EffectBag, emit)
+                            tableInsert(EffectBag, emit)
                         end
                     end
                 end
@@ -3368,7 +3374,7 @@ Unit = Class(moho.unit_methods) {
                 self:RemoveScroller()
             end
 
-            if not effectTypeGroups or (effectTypeGroups and (table.getn(effectTypeGroups) == 0)) then
+            if not effectTypeGroups or (effectTypeGroups and (tableGetn(effectTypeGroups) == 0)) then
                 if not self.Footfalls and bpTable.Footfall then
                     WARN('*WARNING: No movement effect groups defined for unit ', repr(self:GetUnitId()), ', Effect groups with bone lists must be defined to play movement effects. Add these to the Display.MovementEffects', layer, '.Effects table in unit blueprint. ')
                 end
@@ -3447,7 +3453,7 @@ Unit = Class(moho.unit_methods) {
             if self.BeamExhaustCruise  then
                 self:DestroyBeamExhaust()
             end
-            if self.BeamExhaustIdle and table.getn(self.BeamExhaustEffectsBag) == 0 and bpTable.Idle ~= false then
+            if self.BeamExhaustIdle and tableGetn(self.BeamExhaustEffectsBag) == 0 and bpTable.Idle ~= false then
                 self:CreateBeamExhaust(bpTable, self.BeamExhaustIdle)
             end
         elseif motionState == 'Cruise' then
@@ -3466,13 +3472,13 @@ Unit = Class(moho.unit_methods) {
 
     CreateBeamExhaust = function(self, bpTable, beamBP)
         local effectBones = bpTable.Bones
-        if not effectBones or (effectBones and table.getn(effectBones) == 0) then
+        if not effectBones or (effectBones and tableGetn(effectBones) == 0) then
             WARN('*WARNING: No beam exhaust effect bones defined for unit ', repr(self:GetUnitId()), ', Effect Bones must be defined to play beam exhaust effects. Add these to the Display.MovementEffects.BeamExhaust.Bones table in unit blueprint.')
             return false
         end
         local army = self:GetArmy()
         for kb, vb in effectBones do
-            table.insert(self.BeamExhaustEffectsBag, CreateBeamEmitterOnEntity(self, vb, army, beamBP))
+            tableInsert(self.BeamExhaustEffectsBag, CreateBeamEmitterOnEntity(self, vb, army, beamBP))
         end
     end,
 
@@ -3482,7 +3488,7 @@ Unit = Class(moho.unit_methods) {
 
     CreateContrails = function(self, tableData)
         local effectBones = tableData.Bones
-        if not effectBones or (effectBones and table.getn(effectBones) == 0) then
+        if not effectBones or (effectBones and tableGetn(effectBones) == 0) then
             WARN('*WARNING: No contrail effect bones defined for unit ', repr(self:GetUnitId()), ', Effect Bones must be defined to play contrail effects. Add these to the Display.MovementEffects.Air.Contrail.Bones table in unit blueprint. ')
             return false
         end
@@ -3490,7 +3496,7 @@ Unit = Class(moho.unit_methods) {
         local ZOffset = tableData.ZOffset or 0.0
         for ke, ve in self.ContrailEffects do
             for kb, vb in effectBones do
-                table.insert(self.TopSpeedEffectsBag, CreateTrail(self, vb, army, ve):SetEmitterParam('POSITION_Z', ZOffset))
+                tableInsert(self.TopSpeedEffectsBag, CreateTrail(self, vb, army, ve):SetEmitterParam('POSITION_Z', ZOffset))
             end
         end
     end,
@@ -3518,7 +3524,7 @@ Unit = Class(moho.unit_methods) {
             local type = self:GetTTTreadType(self:GetPosition())
             if type ~= 'None' then
                 for k, v in treads.TreadMarks do
-                    table.insert(self.TreadThreads, self:ForkThread(self.CreateTreadsThread, v, type))
+                    tableInsert(self.TreadThreads, self:ForkThread(self.CreateTreadsThread, v, type))
                 end
             end
         end
@@ -3543,7 +3549,7 @@ Unit = Class(moho.unit_methods) {
     end,
 
     CreateFootFallManipulators = function(self, footfall)
-        if not footfall.Bones or (footfall.Bones and (table.getn(footfall.Bones) == 0)) then
+        if not footfall.Bones or (footfall.Bones and (tableGetn(footfall.Bones) == 0)) then
             WARN('*WARNING: No footfall bones defined for unit ', repr(self:GetUnitId()), ', ', 'these must be defined to animation collision detector and foot plant controller')
             return false
         end
@@ -3639,7 +3645,7 @@ Unit = Class(moho.unit_methods) {
         if not self.Sounds[type] then
             local sndEnt
             if self.SoundEntities[1] then
-                sndEnt = table.remove(self.SoundEntities, 1)
+                sndEnt = tableRemove(self.SoundEntities, 1)
             else
                 sndEnt = Entity()
                 Warp(sndEnt, self:GetPosition())
@@ -3680,7 +3686,7 @@ Unit = Class(moho.unit_methods) {
             self.Sounds[type] = nil
             entity:SetAmbientSound(nil, nil)
             self.SoundEntities = self.SoundEntities or {}
-            table.insert(self.SoundEntities, entity)
+            tableInsert(self.SoundEntities, entity)
         end
     end,
 
@@ -3692,7 +3698,7 @@ Unit = Class(moho.unit_methods) {
             error('*ERROR: Tried to add a callback type - ' .. type .. ' with a nil function')
             return
         end
-        table.insert(self.EventCallbacks[type], fn)
+        tableInsert(self.EventCallbacks[type], fn)
     end,
 
     DoUnitCallbacks = function(self, type, param)
@@ -3735,7 +3741,7 @@ Unit = Class(moho.unit_methods) {
     end,
 
     AddOnUnitBuiltCallback = function(self, fn, category)
-        table.insert(self.EventCallbacks['OnUnitBuilt'], {category=category, cb=fn})
+        tableInsert(self.EventCallbacks['OnUnitBuilt'], {category=category, cb=fn})
     end,
 
     DoOnUnitBuiltCallbacks = function(self, unit)
@@ -3773,7 +3779,7 @@ Unit = Class(moho.unit_methods) {
         end
         local num = amount or -1
         repeatNum = repeatNum or 1
-        table.insert(self.EventCallbacks.OnDamaged, {Func = fn, Amount=num, Called=0, Repeat = repeatNum})
+        tableInsert(self.EventCallbacks.OnDamaged, {Func = fn, Amount=num, Called=0, Repeat = repeatNum})
     end,
 
     DoOnDamagedCallbacks = function(self, instigator)
@@ -3903,7 +3909,7 @@ Unit = Class(moho.unit_methods) {
     -------------------------------------------------------------------------------------------
     CreateShield = function(self, bpShield)
         -- Copy the shield template so we don't alter the blueprint table.
-        local bpShield = table.deepcopy(bpShield)
+        local bpShield = tableDeepCopy(bpShield)
         self:DestroyShield()
 
         if bpShield.PersonalShield then
@@ -3984,9 +3990,9 @@ Unit = Class(moho.unit_methods) {
         self:DestroyMovementEffects()
 
         local army =  self:GetArmy()
-        table.insert(self.TransportBeamEffectsBag, AttachBeamEntityToEntity(self, -1, transport, bone, army, EffectTemplate.TTransportBeam01))
-        table.insert(self.TransportBeamEffectsBag, AttachBeamEntityToEntity(transport, bone, self, -1, army, EffectTemplate.TTransportBeam02))
-        table.insert(self.TransportBeamEffectsBag, CreateEmitterAtBone(transport, bone, army, EffectTemplate.TTransportGlow01))
+        tableInsert(self.TransportBeamEffectsBag, AttachBeamEntityToEntity(self, -1, transport, bone, army, EffectTemplate.TTransportBeam01))
+        tableInsert(self.TransportBeamEffectsBag, AttachBeamEntityToEntity(transport, bone, self, -1, army, EffectTemplate.TTransportBeam02))
+        tableInsert(self.TransportBeamEffectsBag, CreateEmitterAtBone(transport, bone, army, EffectTemplate.TTransportGlow01))
         self:TransportAnimation()
     end,
 
@@ -4313,14 +4319,14 @@ Unit = Class(moho.unit_methods) {
                 if not Sync.EnhanceMessage then return end
                 for index, msg in Sync.EnhanceMessage do
                     if msg.source == (source or unitType) and msg.trigger == 'completed' and msg.category == category and msg.id == id then
-                        table.remove(Sync.EnhanceMessage, index)
+                        tableRemove(Sync.EnhanceMessage, index)
                         break
                     end
                 end
             else
                 if not Sync.EnhanceMessage then Sync.EnhanceMessage = {} end
                 local message = {source = source or unitType, trigger = trigger, category = category, id = id, army = army}
-                table.insert(Sync.EnhanceMessage, message)
+                tableInsert(Sync.EnhanceMessage, message)
             end
         end
     end,
