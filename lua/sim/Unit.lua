@@ -11,6 +11,7 @@ local EffectTemplate = import('/lua/EffectTemplates.lua')
 local explosion = import('/lua/defaultexplosions.lua')
 
 local EffectUtilities = import('/lua/EffectUtilities.lua')
+local CleanupEffectBag = EffectUtilities.CleanupEffectBag
 local Game = import('/lua/game.lua')
 local utilities = import('/lua/utilities.lua')
 local Shield = import('/lua/shield.lua').Shield
@@ -3436,7 +3437,7 @@ Unit = Class(moho.unit_methods) {
     end,
 
     DestroyMovementEffects = function(self)
-        EffectUtilities.CleanupEffectBag(self, 'MovementEffectsBag')
+        CleanupEffectBag(self, 'MovementEffectsBag')
 
         -- Clean up any camera shake going on.
         local bpTable = self:GetBlueprint().Display.MovementEffects
@@ -3464,11 +3465,11 @@ Unit = Class(moho.unit_methods) {
     end,
 
     DestroyTopSpeedEffects = function(self)
-        EffectUtilities.CleanupEffectBag(self, 'TopSpeedEffectsBag')
+        CleanupEffectBag(self, 'TopSpeedEffectsBag')
     end,
 
     DestroyIdleEffects = function(self)
-        EffectUtilities.CleanupEffectBag(self, 'IdleEffectsBag')
+        CleanupEffectBag(self, 'IdleEffectsBag')
     end,
 
     UpdateBeamExhaust = function(self, motionState)
@@ -3511,7 +3512,7 @@ Unit = Class(moho.unit_methods) {
     end,
 
     DestroyBeamExhaust = function(self)
-        EffectUtilities.CleanupEffectBag(self, 'BeamExhaustEffectsBag')
+        CleanupEffectBag(self, 'BeamExhaustEffectsBag')
     end,
 
     CreateContrails = function(self, tableData)
