@@ -71,8 +71,11 @@ local GetTerrainHeight = GetTerrainHeight
 local GetTerrainType = GetTerrainType
 local IsAlly = IsAlly
 
-local bps = __blueprints
+local bps = {}--__blueprints
 
+for key, id in EntityCategoryGetUnitList(categories.ALLUNITS) do
+    bps[id] = GetUnitBlueprintByName(id)
+end    
 -- Deprecated function warning flags
 local GetUnitBeingBuiltWarning = false
 
