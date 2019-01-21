@@ -47,6 +47,7 @@ ProjectileBlueprint {
     },
     Physics = {
         DestroyOnWater = true,
+        DetonateBelowHeight = 4,
         LeadTarget = false,
         TurnRate = 360,
         VelocityAlign = true,
