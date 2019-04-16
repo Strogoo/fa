@@ -8,6 +8,7 @@
 local CommandUnit = import('/lua/defaultunits.lua').CommandUnit
 local AWeapons = import('/lua/aeonweapons.lua')
 local ADFReactonCannon = AWeapons.ADFReactonCannon
+local ADFChronoDampener = AWeapons.ADFChronoDampener
 local SCUDeathWeapon = import('/lua/sim/defaultweapons.lua').SCUDeathWeapon
 local EffectUtil = import('/lua/EffectUtilities.lua')
 local Buff = import('/lua/sim/Buff.lua')
@@ -15,6 +16,7 @@ local Buff = import('/lua/sim/Buff.lua')
 UAL0301 = Class(CommandUnit) {
     Weapons = {
         RightReactonCannon = Class(ADFReactonCannon) {},
+        ChronoDampener = Class(ADFChronoDampener) {},
         DeathWeapon = Class(SCUDeathWeapon) {},
     },
 
@@ -31,6 +33,11 @@ UAL0301 = Class(CommandUnit) {
         self.UnitBeingBuilt = nil
         self.UnitBuildOrder = nil
         self.BuildingUnit = false
+    end,
+    
+    OnStopBeingBuilt = function(self, builder, layer)
+        CommandUnit.OnStopBeingBuilt(self, builder, layer)
+        self:SetWeaponEnabledByLabel('ChronoDampener', false)
     end,
 
     OnCreate = function(self)
@@ -141,6 +148,29 @@ UAL0301 = Class(CommandUnit) {
             wep:AddDamageMod(-self:GetBlueprint().Enhancements['RightReactonCannon'].NewDamageMod)
             wep:AddDamageRadiusMod(bp.NewDamageRadiusMod or 0)
             wep:ChangeMaxRadius(bp.NewMaxRadius or 30)
+        elseif enh == 'ChronoDampener' then
+            self:SetWeaponEnabledByLabel('ChronoDampener', true)
+            if not Buffs['AeonSACUChronoDampener'] then
+                BuffBlueprint {
+                    Name = 'AeonSACUChronoDampener',
+                    DisplayName = 'AeonSACUChronoDampener',
+                    BuffType = 'DamageStabilization',
+                    Stacks = 'REPLACE',
+                    Duration = -1,
+                    Affects = {
+                        MaxHealth = {
+                            Add = bp.NewHealth,
+                            Mult = 1.0,
+                        },
+                    },
+                }
+            end
+            Buff.ApplyBuff(self, 'AeonSACUChronoDampener')
+        elseif enh == 'ChronoDampenerRemove' then
+            if Buff.HasBuff(self, 'AeonSACUChronoDampener') then
+                Buff.RemoveBuff(self, 'AeonSACUChronoDampener')
+            end
+            self:SetWeaponEnabledByLabel('ChronoDampener', false)
         end
     end,
 
