@@ -21,6 +21,14 @@ float		BlurScale;
 float		GlowCopyScale;
 float       GlowCopyAdd;
 
+float		ProjectionWpos;
+float       ProjectionZpos;
+
+float4x4    InverseWldProj;
+float4x4	WorldToProj;
+texture		FogOfWarTex;
+float       CamHeading;
+
 float4      silhouetteColor = float4( 0, 0, 1, 1 );
 float4		rangeColor = float4(0.2,0.2,0.2,0.2);
 
@@ -106,6 +114,16 @@ sampler2D FrameSamplerWrap4 = sampler_state
     AddressV  = WRAP;
 };
 
+sampler2D FrameSamplerFog = sampler_state
+{
+    Texture = (FogOfWarTex);
+    MipFilter = NONE;
+    MinFilter = LINEAR;
+    MagFilter = LINEAR;
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+};
+
 struct VS_IN
 {
     float4 Pos   : POSITION;    
@@ -117,6 +135,14 @@ struct VS_OUT
     float4 Pos   : POSITION;    
     float2 Tex1  : TEXCOORD0;
     float2 Tex2  : TEXCOORD1; 
+};
+
+struct VS_OUT2
+{
+    float2 Tex1 : TEXCOORD0;
+    float2 Tex2 : TEXCOORD1;
+    float2 Tex3 : TEXCOORD1;
+    float2 Tex4 : TEXCOORD1;
 };
 
 
@@ -213,15 +239,69 @@ float4 RangePS(
 	return color;
 }
 
+float4 colorTest = float4(0.2, 0.3, 0.4, 1);
+
+VS_OUT CustomVS(VS_IN In)
+{
+    VS_OUT Out = (VS_OUT) 0;
+
+    float2 position = (In.Pos.xy + float2(50.5, 50.5)) / float2(1, 1);
+    position = float2(2 * position.x - 1, 1 - 2 * position.y);
+	
+    Out.Pos = float4(position.xy, In.Pos.z, In.Pos.w);
+    Out.Tex1 = FixedFuncTexCoord(In.Tex1);
+    Out.Tex2 = FixedFuncTexCoord(In.Tex1);
+
+    return Out;
+}
+
 float4 VisionPS(
-	float4 Pos	 : POSITION,
+	float4 Pos : POSITION,
 	float2 Tex1  : TEXCOORD0,
     float2 Tex2  : TEXCOORD1,
     uniform float factor
 ) : COLOR0
 {
-	return float4(0,0,0,factor);
+	//   Matrix4x4        Pos
+	// 11  21  31  41      X
+	// 12  22  32  42      Y 
+	// 13  23  33  43      Z
+	// 14  24  34  44      W
+	
+	//                  0,1 space to -1,1
+    float projectionX = (Tex1[0] * 2 - 1) * (WorldToProj._44 - 23.5);
+    float projectionY = (Tex1[1] * 2 - 1) * (WorldToProj._44 - 23.5);
+	
+    //float2 scale = float2((framewidth) / 1024, (frameheight) / 1024);
+    //float tex_x = (Tex2.x * 2 - 1) * scale[0];
+    //float tex_y = (Tex2.y * 2 - 1) * scale[1];
+	
+    //float4 worldPos = mul(float4(projectionX, projectionY, WorldToProj._44 - 23.5 - (WorldToProj._44 - WorldToProj._43), (WorldToProj._44 - 23.5)), InverseWldProj);
+	
+    float4 worldPos = mul(float4(projectionX, projectionY, WorldToProj._43, WorldToProj._44), InverseWldProj);
+	
+	//[0] = X in world coords = X in texture
+	//[2] = Z in world coords = Y in texture
+	//1024 map size 20x20km. Todo: send map size from engine
+
+    //float2 final = float2(worldPos[0] / 1024, 1 - (worldPos[2] / 1024));
+
+    //float2x2 ma = float2x2(cos(6), sin(6), -sin(6), cos(6));
+    float2x2 ma = float2x2(cos(CamHeading), sin(CamHeading), -sin(CamHeading), cos(CamHeading));
+    //float2x2 ma = float2x2(1,0.17,-0.17,1);
+    float2 final2 = float2(worldPos[2] - 512 ,worldPos[0] - 512);
+    final2 = mul(final2, ma);
+    final2 = float2(final2[0] + 512, final2[1] + 512);
+    float2 final = float2(final2[0] / 1024, (final2[1] / 1024));
+	
+    //float2x2 ma = (cos(0.11), sin(0.11), -sin(0.11), cos(0.11));
+	
+    //final = mul(final, ma);
+	
+    return tex2D(FrameSamplerFog, final);
 }
+
+
 
 struct STRATEGIC_VERTEX
 {
@@ -647,7 +727,7 @@ technique Boundary
 		StencilPass = keep;
 		
         VertexShader = FIXED_FUNC_VS;
-        PixelShader = compile ps_2_0 VisionPS(1.0);
+        PixelShader = compile ps_2_0 VisionPS(1);
     }
 }
 
